@@ -1,0 +1,36 @@
+-- CA by country
+SELECT c.country, SUM(quantityOrdered*priceEach) as CA
+FROM orderdetails od
+JOIN orders o ON od.orderNumber=o.orderNumber
+JOIN customers c ON o.customerNumber=c.customerNumber
+WHERE orderDate >= now()-interval 2 month
+AND o.status != 'Cancelled' AND o.status != 'on Hold'
+GROUP BY c.country
+
+--Not Paid
+with ca_orders as
+
+(select orderNumber,
+sum(orderdetails.quantityOrdered * orderdetails.priceEach) as ca
+from orderdetails
+group by orderNumber),
+
+order_customers as (
+select o.customerNumber, sum(co.ca) as ca
+from ca_orders co
+join orders o
+on co.ordernumber = o.ordernumber
+WHERE o.status != 'Cancelled' AND o.status != 'on Hold'
+group by customerNumber),
+
+table_final as (
+select oc.customerNumber, oc.ca, sum(p.amount) as payed
+from order_customers oc
+join payments p
+on oc.customerNumber = p.customerNumber
+GROUP BY oc.customerNumber)
+
+select customerName, table_final.*, ca-payed from table_final
+JOIN customers c
+ON table_final.customerNumber=c.customerNumber
+where ca-payed > 0
