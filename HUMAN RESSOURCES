@@ -1,0 +1,18 @@
+-- Top 2 sellers by month
+
+WITH montantParCLient As 
+(SELECT c.customerNumber, monthname(orderDate) as month,  SUM(quantityOrdered*priceEach) as totalClient, c.salesRepEmployeeNumber as idEmployee
+FROM customers c
+LEFT JOIN orders o ON o.customerNumber = c.customerNumber
+LEFT JOIN orderdetails od ON o.orderNumber = od.orderNumber
+WHERE o.orderDate > (CURDATE( )-INTERVAL 6 MONTH)
+GROUP BY MONTH(o.orderDate), customerNumber)
+
+SELECT idEmployee,e.lastName, e.firstName, month, SUM(totalClient) as totalEmployee, 
+ROW_NUMBER() OVER( 
+PARTITION BY month
+ORDER BY totalEmployee DESC)
+classement
+FROM montantParCLient mpc
+JOIN employees e ON e.employeeNumber = idEmployee
+GROUP BY month, employeeNumber
