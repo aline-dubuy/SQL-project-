@@ -1,0 +1,13 @@
+WITH requete1 as
+(SELECT pl.productLine, MONTHNAME(orderDate),
+IFNULL(SUM(CASE WHEN YEAR(CURRENT_DATE())=YEAR(orderDate) THEN quantityOrdered END),0) AS currentYearQuantity,
+IFNULL(SUM(CASE WHEN YEAR(CURRENT_DATE())-1= YEAR(orderDate) THEN quantityOrdered END),0) AS lastYearQuantity
+FROM productlines pl
+LEFT JOIN products p ON pl.productLine=p.productLine
+LEFT JOIN orderdetails od ON p.productCode=od.productCode
+LEFT JOIN orders o ON od.orderNumber=o.orderNumber
+WHERE o.status != 'Cancelled' AND o.status != 'on Hold'
+GROUP BY productLine, MONTH(orderDate)
+)
+
+SELECT * , IFNULL(((currentYearQuantity-lastYearQuantity)/lastYearQuantity),1) as rateOfChange FROM requete1
